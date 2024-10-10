@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/xesrevinu/actions-template-sync/compare/v3.1.0...v3.1.1) (2024-10-10)
+
+
+### Bug Fixes
+
+* Explicitly use SYNC_TOKEN for GitHub authentication ([5d5f0c4](https://github.com/xesrevinu/actions-template-sync/commit/5d5f0c40d149f9fe622f2f52a5bfa5a3862140cb))
+
 ## [3.1.0](https://github.com/xesrevinu/actions-template-sync/compare/v3.0.0...v3.1.0) (2024-10-10)
 
 
