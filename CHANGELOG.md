@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/xesrevinu/actions-template-sync/compare/v3.1.1...v3.1.2) (2024-10-10)
+
+
+### Bug Fixes
+
+* token fix ([a7d0941](https://github.com/xesrevinu/actions-template-sync/commit/a7d09412255cdbaeb2fe3c4baf6fa90f432f814b))
+
 ## [3.1.1](https://github.com/xesrevinu/actions-template-sync/compare/v3.1.0...v3.1.1) (2024-10-10)
 
 
