@@ -158,9 +158,11 @@ function git_init() {
   else
     info "the source repository is located within GitHub."
     if [[ "${SYNC_TOKEN}" ]]; then
-      # clear GITHUB_TOKEN
+      # backup GITHUB_TOKEN
+      export GITHUB_TOKEN_BAK="${GITHUB_TOKEN}"
       unset GITHUB_TOKEN
       gh auth login --with-token <<< "${SYNC_TOKEN}"
+      export GITHUB_TOKEN="${GITHUB_TOKEN_BAK}"
     fi
     gh auth setup-git --hostname "${source_repo_hostname}"
     gh auth status --hostname "${source_repo_hostname}"
