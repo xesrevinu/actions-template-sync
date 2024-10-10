@@ -89,6 +89,7 @@ runs:
       shell: bash
       id: sync
       env:
+        SYNC_TOKEN: ${{ inputs.sync_token }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
         SOURCE_REPO_PATH: ${{ inputs.source_repo_path }}
         UPSTREAM_BRANCH: ${{ inputs.upstream_branch }}
