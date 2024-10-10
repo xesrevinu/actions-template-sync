@@ -299,9 +299,14 @@ function push () {
 #######################################
 function switch_to_github_token_auth() {
   info "Switching to GITHUB_TOKEN for authentication"
+
+  export GITHUB_TOKEN_BAK="${GITHUB_TOKEN}"
+  unset GITHUB_TOKEN
   gh auth logout
+
   info "logging in with GITHUB_TOKEN"
-  gh auth login --with-token <<< "${GITHUB_TOKEN}"
+  gh auth login --with-token <<< "${GITHUB_TOKEN_BAK}"
+  export GITHUB_TOKEN="${GITHUB_TOKEN_BAK}"
 }
 
 ####################################
