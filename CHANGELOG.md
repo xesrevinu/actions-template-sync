@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/xesrevinu/actions-template-sync/compare/v3.0.0...v3.1.0) (2024-10-10)
+
+
+### Features
+
+* fix input ([9d6fafe](https://github.com/xesrevinu/actions-template-sync/commit/9d6fafeb65e0723124361a041e6ccb502ca973e0))
+
 ## [3.0.0](https://github.com/xesrevinu/actions-template-sync/compare/v2.2.3...v3.0.0) (2024-10-10)
 
 
