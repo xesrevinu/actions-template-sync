@@ -300,7 +300,7 @@ function push () {
 function switch_to_github_token_auth() {
   info "Switching to GITHUB_TOKEN for authentication"
   gh auth logout
-  echo "$GITHUB_TOKEN" | gh auth login --with-token
+  gh auth login --with-token <<< "${GITHUB_TOKEN}"
 }
 
 ####################################

@@ -7,7 +7,7 @@ branding:
 inputs:
   sync_token:
     description: 'Token for the repo. Can be passed in using $\{{ secrets.SYNC_TOKEN }}'
-    required: true
+    required: false
   github_token:
     description: 'Token for the repo. Can be passed in using $\{{ secrets.GITHUB_TOKEN }}'
     required: true
