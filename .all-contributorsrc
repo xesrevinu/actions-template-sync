@@ -334,6 +334,26 @@
       "contributions": [
         "research"
       ]
+    },
+    {
+      "login": "TechnicallyJoe",
+      "name": "Jonathan Østrup",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7877957?v=4",
+      "profile": "https://github.com/technicallyjoe",
+      "contributions": [
+        "ideas",
+        "code"
+      ]
+    },
+    {
+      "login": "icco",
+      "name": "Nat Welch",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20201?v=4",
+      "profile": "https://natwelch.com",
+      "contributions": [
+        "bug",
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

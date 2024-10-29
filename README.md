@@ -1,6 +1,6 @@
 # actions-template-sync
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-33-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-35-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
  [![actions-template-sync](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/actions_template_sync.yml/badge.svg)](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/actions_template_sync.yml)
@@ -269,6 +269,8 @@ jobs:
 | gpg_private_key | `[optional]` set if you want to sign commits | `false` | |
 | gpg_passphrase | `[optional]` set if your optionial gpg private key has a passphrase | `false` | |
 | steps | `[optional] add the steps you want to execute within the action` | `false` | all steps will be executed |
+| template_sync_ignore_file_path | `[optional] set the path to the ignore file.` | false |`.templatesyncignore` |
+| is_with_tags | `[optional]` set to `true` if tags should be synced | `false` | `false` |
 
 ### Action Outputs
 
@@ -314,6 +316,11 @@ Create a `.templatesyncignore` file. Just like writing a `.gitignore` file, foll
 in defining the files and folders that should be excluded from syncing with the template repository.
 
 It can also be stored inside `.github` folder.
+
+The `template_sync_ignore_file_path` parameter allows you to specify a path to an ignore file. This variable defaults to `.templatesyncignore`.
+Changing this allows you to support template sync with more than one repository using different ignore files.
+
+The action will look for the path specified within `.` or `.github/`
 
 _Note: It is not possible to sync also the `.templatesyncignore` itself. Any changes from the template repository will be restored automatically._
 
@@ -568,6 +575,30 @@ This feature will force delete files if those are deelted within the source repo
 :warning: it is highly related to the `git_remote_pull_params` config parameter and won't work with the default.
 You need to change the default one e.g. to `git_remote_pull_params: --allow-unrelated-histories --strategy=recursive --no-edit`.
 
+## GHES and custom runners
+
+Some notes if you use GitHub Enterprise Server (GHES) and/or custom runners.
+The action script is based on bash. That means your runner must be able to run bash scripts.
+Furthermore you need to have the following command line tools installed:
+
+* ssh
+* [GitHub cli][gh-cli]
+* git
+* optional (dependent the features you are using)
+  * [git lfs][git-lfs] if you are using the lfs functionality
+  * [yq][yq] if you are using the hook functionality
+  * gpg if you are using the git signing functionality
+
+Furthermore most likely you have a custom domain name. Therefore you should configure the `hostname` GitHub action parameter.
+
+### Remark
+
+:whale: There is also a docker image available which has all needed tools installed. This is helpful e.g. if you are not able to use a remote action.
+The idea is to use the [docker action][action-docker]
+
+* [GitHub registry][github-repo]
+* [Dockerhub registry][dockerhub-repo]
+
 ## Troubleshooting
 
 * refusing to allow a GitHub App to create or update workflow `.github/workflows/******.yml` without `workflows` permission
@@ -721,6 +752,8 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/brian6932"><img src="https://avatars.githubusercontent.com/u/18603393?v=4?s=100" width="100px;" alt="Brian"/><br /><sub><b>Brian</b></sub></a><br /><a href="https://github.com/AndreasAugustin/actions-template-sync/commits?author=brian6932" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/MuriloChianfa"><img src="https://avatars.githubusercontent.com/u/60560085?v=4?s=100" width="100px;" alt="MuriloChianfa"/><br /><sub><b>MuriloChianfa</b></sub></a><br /><a href="https://github.com/AndreasAugustin/actions-template-sync/commits?author=MuriloChianfa" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/davidsnyder"><img src="https://avatars.githubusercontent.com/u/229108?v=4?s=100" width="100px;" alt="David Snyder"/><br /><sub><b>David Snyder</b></sub></a><br /><a href="#research-davidsnyder" title="Research">🔬</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/technicallyjoe"><img src="https://avatars.githubusercontent.com/u/7877957?v=4?s=100" width="100px;" alt="Jonathan Østrup"/><br /><sub><b>Jonathan Østrup</b></sub></a><br /><a href="#ideas-TechnicallyJoe" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/AndreasAugustin/actions-template-sync/commits?author=TechnicallyJoe" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://natwelch.com"><img src="https://avatars.githubusercontent.com/u/20201?v=4?s=100" width="100px;" alt="Nat Welch"/><br /><sub><b>Nat Welch</b></sub></a><br /><a href="https://github.com/AndreasAugustin/actions-template-sync/issues?q=author%3Aicco" title="Bug reports">🐛</a> <a href="https://github.com/AndreasAugustin/actions-template-sync/commits?author=icco" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
@@ -760,3 +793,6 @@ specification. Contributions of any kind are welcome!
 [github-create-secret]: https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository
 [github-create-gpg-key]: https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key
 [github-gh-cli-pr-edit]: https://cli.github.com/manual/gh_pr_edit
+[gh-cli]: https://github.com/cli/cli
+[yq]: https://github.com/mikefarah/yq
+[git-lfs]: https://github.com/git-lfs/git-lfs

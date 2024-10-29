@@ -28,6 +28,11 @@ if ! [ -x "$(command -v gh)" ]; then
   exit 1;
 fi
 
+if [[ -z "${TEMPLATE_SYNC_IGNORE_FILE_PATH}" ]]; then
+  err "Missing env variable 'TEMPLATE_SYNC_IGNORE_FILE_PATH'";
+  exit 1;
+fi
+
 ########################################################
 # Variables
 ########################################################
@@ -42,11 +47,12 @@ if [[ -n "${SRC_SSH_PRIVATEKEY_ABS_PATH}" ]]; then
   export GIT_SSH_COMMAND="ssh -i ${SRC_SSH_PRIVATEKEY_ABS_PATH}"
 fi
 
+TEMPLATE_SYNC_IGNORE_FILE_PATH="${TEMPLATE_SYNC_IGNORE_FILE_PATH:-".templatesyncignore"}"
+IS_WITH_TAGS="${IS_WITH_TAGS:-"false"}"
 IS_FORCE_PUSH_PR="${IS_FORCE_PUSH_PR:-"false"}"
 IS_KEEP_BRANCH_ON_PR_CLEANUP="${IS_KEEP_BRANCH_ON_PR_CLEANUP:-"false"}"
 GIT_REMOTE_PULL_PARAMS="${GIT_REMOTE_PULL_PARAMS:---allow-unrelated-histories --squash --strategy=recursive -X theirs}"
 
-TEMPLATE_SYNC_IGNORE_FILE_PATH=".templatesyncignore"
 TEMPLATE_REMOTE_GIT_HASH=$(git ls-remote "${SOURCE_REPO}" HEAD | awk '{print $1}')
 SHORT_TEMPLATE_GIT_HASH=$(git rev-parse --short "${TEMPLATE_REMOTE_GIT_HASH}")
 
@@ -74,7 +80,7 @@ debug "PR_BODY ${PR_BODY}"
 # Check if the Ignore File exists inside .github folder or if it doesn't exist at all
 if [[ -f ".github/${TEMPLATE_SYNC_IGNORE_FILE_PATH}" || ! -f "${TEMPLATE_SYNC_IGNORE_FILE_PATH}" ]]; then
   debug "using ignore file as in .github folder"
-  TEMPLATE_SYNC_IGNORE_FILE_PATH=".github/${TEMPLATE_SYNC_IGNORE_FILE_PATH}"
+    TEMPLATE_SYNC_IGNORE_FILE_PATH=".github/${TEMPLATE_SYNC_IGNORE_FILE_PATH}"
 fi
 
 #####################################################
@@ -141,7 +147,6 @@ function check_if_commit_already_in_hist_graceful_exit() {
     warn "repository is up to date!"
     exit 0
   fi
-
 }
 
 ##########################################
@@ -231,7 +236,7 @@ function pull_source_changes() {
   local source_repo=$1
   local git_remote_pull_params=$2
 
-  eval "git pull ${source_repo} ${git_remote_pull_params}" || pull_has_issues=true
+  eval "git pull ${source_repo} --tags ${git_remote_pull_params}" || pull_has_issues=true
 
   if [ "$pull_has_issues" == true ] ; then
     warn "There had been some git pull issues."
@@ -280,18 +285,27 @@ function eventual_create_labels () {
 # Arguments:
 #   branch
 #   is_force
+#   is_with_tags
 ##############################
 function push () {
   info "push changes"
   local branch=$1
   local is_force=$2
+  local is_with_tags=$3
+
+  args=(--set-upstream origin "${branch}")
 
   if [ "$is_force" == true ] ; then
     warn "forcing the push."
-    git push --force --set-upstream origin "${branch}"
-  else
-    git push --set-upstream origin "${branch}"
+    args+=(--force)
   fi
+
+  if [ "$is_with_tags" == true ] ; then
+    warn "include tags."
+    args+=(--tags)
+  fi
+
+  git push "${args[@]}"
 }
 
 #######################################
@@ -477,7 +491,7 @@ function arr_push() {
     return 0
   fi
   cmd_from_yml "prepush"
-  push "${PR_BRANCH}" "${IS_FORCE_PUSH_PR}"
+  push "${PR_BRANCH}" "${IS_FORCE_PUSH_PR}" "${IS_WITH_TAGS}"
   echo "::endgroup::"
 }
 
