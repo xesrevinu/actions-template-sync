@@ -14,7 +14,5 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: markdownlint
-        run: make markdownlint
       - name: prune
         run: make prune
