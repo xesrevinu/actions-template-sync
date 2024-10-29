@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.0.0](https://github.com/xesrevinu/actions-template-sync/compare/v2.4.1...v3.0.0) (2024-10-29)
+## [3.1.4](https://github.com/xesrevinu/actions-template-sync/compare/v2.4.1...v3.1.4) (2024-10-29)
 
 
 ### ⚠ BREAKING CHANGES
