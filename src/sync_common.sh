@@ -47,13 +47,15 @@ function info() {
 #   Command to execute (variadic). Pass either `auth ...` or `gh ...`
 #######################################
 function gh_without_workflow_token_env() {
+  local -a cmd=("$@")
+  if [[ "${cmd[0]}" == "gh" ]]; then
+    cmd=("${cmd[@]:1}")
+  fi
+  info "Executing gh with workflow tokens unset: gh ${cmd[*]}"
   (
     unset GITHUB_TOKEN
     unset GH_TOKEN
-    if [[ "$1" == "gh" ]]; then
-      shift
-    fi
-    gh "$@"
+    gh "${cmd[@]}"
   )
 }
 

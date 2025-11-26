@@ -144,13 +144,19 @@ function gh_exec_with_github_token() {
   local -a command=("$@")
 
   if [[ -z "${GITHUB_TOKEN}" ]]; then
-    debug "GITHUB_TOKEN is empty. Running ${description} with the current gh identity."
+    debug "GITHUB_TOKEN is empty. Running ${description} with the current gh identity: ${command[*]}"
     "${command[@]}"
     return $?
   fi
 
-  info "Running ${description} as github-actions[bot]"
-  GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"
+  info "Running ${description} as github-actions[bot] against ${TARGET_REPO_HOSTNAME}: ${command[*]}"
+  if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"; then
+    return 0
+  fi
+
+  local exit_code=$?
+  warn "${description} failed as github-actions[bot] (exit ${exit_code})"
+  return ${exit_code}
 }
 
 #######################################
@@ -436,6 +442,7 @@ function create_pr() {
   local branch=$3
   local labels=$4
   local reviewers=$5
+  local head_branch=${6:-${PR_BRANCH}}
   local create_pr_has_issues=false
 
   local -a args=(gh pr create
@@ -456,6 +463,10 @@ function create_pr() {
   if [ "$create_pr_has_issues" == true ] ; then
     warn "Creating the PR failed."
     warn "Eventually it is already existent."
+    if find_existing_pr_for_branch "${head_branch}"; then
+      info "Detected existing PR for branch ${head_branch} right after failure: ${FOUND_PR_URL}"
+      return 0
+    fi
     return 1
   fi
   return 0
@@ -485,7 +496,7 @@ function create_or_edit_pr() {
     return 0
   fi
 
-  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" && \
+  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" "${pr_branch}" && \
     set_github_action_outputs "${pr_branch}" "${TEMPLATE_GIT_HASH}"
 }
 
