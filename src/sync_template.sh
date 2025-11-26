@@ -98,6 +98,34 @@ if [[ -z "${TARGET_REPO_HOSTNAME}" ]]; then
   TARGET_REPO_HOSTNAME="${GITHUB_SERVER_URL}"
 fi
 
+TARGET_REPO="${GITHUB_REPOSITORY:-}"
+if [[ "${TARGET_REPO}" == */* ]]; then
+  TARGET_REPO_OWNER="${TARGET_REPO%%/*}"
+  TARGET_REPO_NAME="${TARGET_REPO##*/}"
+else
+  TARGET_REPO_OWNER=""
+  TARGET_REPO_NAME=""
+fi
+
+PR_DEBUG_GRAPHQL_QUERY=$(cat <<'GRAPHQL'
+query($owner:String!, $name:String!, $head:String!) {
+  viewer { login }
+  repository(owner:$owner, name:$name) {
+    viewerPermission
+    pullRequests(headRefName:$head, first: 1, states: OPEN) {
+      nodes {
+        number
+        state
+        viewerDidAuthor
+        viewerCanUpdate
+        headRefName
+      }
+    }
+  }
+}
+GRAPHQL
+)
+
 #####################################################
 # Functions
 #####################################################
@@ -144,19 +172,19 @@ function gh_exec_with_github_token() {
   local -a command=("$@")
 
   if [[ -z "${GITHUB_TOKEN}" ]]; then
-    debug "[gh-default] ${description}: ${command[*]}"
+    echo "[gh-default] ${description}: ${command[*]}"
     "${command[@]}"
     return $?
   fi
 
-  debug "[gh-bot] ${description}: ${command[*]}"
+  echo "[gh-bot] ${description}: ${command[*]}"
   if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"; then
-    debug "[gh-bot] ${description} succeeded"
+    echo "[gh-bot] ${description} succeeded"
     return 0
   fi
 
   local exit_code=$?
-  warn "[gh-bot] ${description} failed (exit ${exit_code})"
+  echo "[gh-bot] ${description} failed (exit ${exit_code})"
   return ${exit_code}
 }
 
@@ -392,6 +420,94 @@ function push () {
 }
 
 ####################################
+# Debug helper to describe repo permissions for a token value.
+# Arguments:
+#   label
+#   token
+#   branch
+####################################
+function describe_repo_permissions_with_token() {
+  local label=$1
+  local token=$2
+  local branch=$3
+
+  if [[ -z "${token}" ]]; then
+    echo "[token-debug] ${label}: token is empty"
+    return 1
+  fi
+
+  if [[ -z "${TARGET_REPO_OWNER}" || -z "${TARGET_REPO_NAME}" ]]; then
+    echo "[token-debug] ${label}: target repository context missing"
+    return 1
+  fi
+
+  local login_output
+  if login_output=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${token}" gh api user --jq '.login' 2>&1); then
+    echo "[token-debug] ${label}: login ${login_output}"
+  else
+    echo "[token-debug] ${label}: failed to fetch login: ${login_output}"
+  fi
+
+  local perm_output
+  if perm_output=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${token}" gh api graphql \
+      -f owner="${TARGET_REPO_OWNER}" \
+      -f name="${TARGET_REPO_NAME}" \
+      -f head="${branch}" \
+      --raw-field query="${PR_DEBUG_GRAPHQL_QUERY}" \
+      --jq '.data' 2>&1); then
+    echo "[token-debug] ${label}: ${perm_output}"
+  else
+    echo "[token-debug] ${label}: graphql query failed: ${perm_output}"
+  fi
+}
+
+####################################
+# Debug helper to describe repo permissions for the stored gh auth
+# (i.e., target_gh_token written to gh).
+####################################
+function describe_repo_permissions_with_default_login() {
+  local label=$1
+  local branch=$2
+
+  if [[ -z "${TARGET_REPO_OWNER}" || -z "${TARGET_REPO_NAME}" ]]; then
+    echo "[token-debug] ${label}: target repository context missing"
+    return 1
+  fi
+
+  local login_output
+  if login_output=$(gh_without_workflow_token_env api user --jq '.login' 2>&1); then
+    echo "[token-debug] ${label}: login ${login_output}"
+  else
+    echo "[token-debug] ${label}: failed to fetch login: ${login_output}"
+  fi
+
+  local perm_output
+  if perm_output=$(gh_without_workflow_token_env api graphql \
+      -f owner="${TARGET_REPO_OWNER}" \
+      -f name="${TARGET_REPO_NAME}" \
+      -f head="${branch}" \
+      --raw-field query="${PR_DEBUG_GRAPHQL_QUERY}" \
+      --jq '.data' 2>&1); then
+    echo "[token-debug] ${label}: ${perm_output}"
+  else
+    echo "[token-debug] ${label}: graphql query failed: ${perm_output}"
+  fi
+}
+
+####################################
+# Aggregate debug output for all interesting tokens.
+# Arguments:
+#   branch name to inspect
+####################################
+function debug_pr_token_matrix() {
+  local branch=$1
+  echo "[token-debug] Inspecting permissions for branch ${branch}"
+  describe_repo_permissions_with_token "GITHUB_TOKEN" "${GITHUB_TOKEN}" "${branch}"
+  describe_repo_permissions_with_token "TARGET_GH_TOKEN" "${TARGET_GH_TOKEN}" "${branch}"
+  describe_repo_permissions_with_default_login "gh-cli-config" "${branch}"
+}
+
+####################################
 # Check if a PR already exists for a given branch.
 # Sets FOUND_PR_NUMBER and FOUND_PR_URL when present.
 ####################################
@@ -495,6 +611,8 @@ function create_or_edit_pr() {
   local labels=$4
   local reviewers=$5
   local pr_branch=${6:-${PR_BRANCH}}
+
+  debug_pr_token_matrix "${pr_branch}"
 
   if find_existing_pr_for_branch "${pr_branch}"; then
     info "pull request already exists for ${pr_branch}: ${FOUND_PR_URL}"
