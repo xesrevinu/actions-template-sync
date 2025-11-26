@@ -144,18 +144,19 @@ function gh_exec_with_github_token() {
   local -a command=("$@")
 
   if [[ -z "${GITHUB_TOKEN}" ]]; then
-    debug "GITHUB_TOKEN is empty. Running ${description} with the current gh identity: ${command[*]}"
+    debug "[gh-default] ${description}: ${command[*]}"
     "${command[@]}"
     return $?
   fi
 
-  info "Running ${description} as github-actions[bot] against ${TARGET_REPO_HOSTNAME}: ${command[*]}"
+  debug "[gh-bot] ${description}: ${command[*]}"
   if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"; then
+    debug "[gh-bot] ${description} succeeded"
     return 0
   fi
 
   local exit_code=$?
-  warn "${description} failed as github-actions[bot] (exit ${exit_code})"
+  warn "[gh-bot] ${description} failed (exit ${exit_code})"
   return ${exit_code}
 }
 
@@ -459,6 +460,11 @@ function create_pr() {
   fi
 
   gh_exec_with_github_token "gh pr create" "${args[@]}" || create_pr_has_issues=true
+
+  debug "[gh-default] verifying stored gh login after PR attempt"
+  if ! gh_without_workflow_token_env auth status --hostname "${TARGET_REPO_HOSTNAME}"; then
+    debug "[gh-default] warning: unable to verify gh auth after PR creation"
+  fi
 
   if [ "$create_pr_has_issues" == true ] ; then
     warn "Creating the PR failed."

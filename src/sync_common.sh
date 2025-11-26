@@ -51,7 +51,7 @@ function gh_without_workflow_token_env() {
   if [[ "${cmd[0]}" == "gh" ]]; then
     cmd=("${cmd[@]:1}")
   fi
-  info "Executing gh with workflow tokens unset: gh ${cmd[*]}"
+  info "[gh-no-token] gh ${cmd[*]}"
   (
     unset GITHUB_TOKEN
     unset GH_TOKEN
