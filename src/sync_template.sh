@@ -352,6 +352,21 @@ function push () {
 
 }
 
+#######################################
+# Switch GitHub authentication to use GITHUB_TOKEN
+#######################################
+function switch_to_github_token_auth() {
+  info "Switching to GITHUB_TOKEN for authentication"
+
+  export GITHUB_TOKEN_BAK="${GITHUB_TOKEN}"
+  unset GITHUB_TOKEN
+  gh auth logout
+
+  info "logging in with GITHUB_TOKEN"
+  gh auth login --with-token <<< "${GITHUB_TOKEN_BAK}"
+  export GITHUB_TOKEN="${GITHUB_TOKEN_BAK}"
+}
+
 ####################################
 # creates a pr
 # Arguments:
@@ -368,6 +383,9 @@ function create_pr() {
   local branch=$3
   local labels=$4
   local reviewers=$5
+
+  # Switch to GITHUB_TOKEN authentication before creating PR
+  switch_to_github_token_auth
 
   gh pr create \
     --title "${title}" \
@@ -401,6 +419,9 @@ function create_or_edit_pr() {
   local labels=$4
   local reviewers=$5
   local pr_branch=$6
+
+  # Switch to GITHUB_TOKEN authentication before creating/editing PR
+  switch_to_github_token_auth
 
   create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" || gh pr edit \
     --title "${title}" \
