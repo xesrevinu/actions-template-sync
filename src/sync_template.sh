@@ -98,34 +98,6 @@ if [[ -z "${TARGET_REPO_HOSTNAME}" ]]; then
   TARGET_REPO_HOSTNAME="${GITHUB_SERVER_URL}"
 fi
 
-TARGET_REPO="${GITHUB_REPOSITORY:-}"
-if [[ "${TARGET_REPO}" == */* ]]; then
-  TARGET_REPO_OWNER="${TARGET_REPO%%/*}"
-  TARGET_REPO_NAME="${TARGET_REPO##*/}"
-else
-  TARGET_REPO_OWNER=""
-  TARGET_REPO_NAME=""
-fi
-
-PR_DEBUG_GRAPHQL_QUERY=$(cat <<'GRAPHQL'
-query($owner:String!, $name:String!, $head:String!) {
-  viewer { login }
-  repository(owner:$owner, name:$name) {
-    viewerPermission
-    pullRequests(headRefName:$head, first: 1, states: OPEN) {
-      nodes {
-        number
-        state
-        viewerDidAuthor
-        viewerCanUpdate
-        headRefName
-      }
-    }
-  }
-}
-GRAPHQL
-)
-
 #####################################################
 # Functions
 #####################################################
@@ -171,21 +143,16 @@ function gh_exec_with_github_token() {
   shift
   local -a command=("$@")
 
-  if [[ -z "${GITHUB_TOKEN}" ]]; then
-    echo "[gh-default] ${description}: ${command[*]}"
+  local pr_token="${SOURCE_GH_TOKEN:-${GITHUB_TOKEN}}"
+
+  if [[ -z "${pr_token}" ]]; then
+    debug "${description}: SOURCE_GH_TOKEN is empty. Running with current gh identity."
     "${command[@]}"
     return $?
   fi
 
-  echo "[gh-bot] ${description}: ${command[*]}"
-  if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"; then
-    echo "[gh-bot] ${description} succeeded"
-    return 0
-  fi
-
-  local exit_code=$?
-  echo "[gh-bot] ${description} failed (exit ${exit_code})"
-  return ${exit_code}
+  info "Running ${description} with source token"
+  GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${pr_token}" "${command[@]}"
 }
 
 #######################################
@@ -420,112 +387,25 @@ function push () {
 }
 
 ####################################
-# Debug helper to describe repo permissions for a token value.
-# Arguments:
-#   label
-#   token
-#   branch
-####################################
-function describe_repo_permissions_with_token() {
-  local label=$1
-  local token=$2
-  local branch=$3
-
-  if [[ -z "${token}" ]]; then
-    echo "[token-debug] ${label}: token is empty"
-    return 1
-  fi
-
-  if [[ -z "${TARGET_REPO_OWNER}" || -z "${TARGET_REPO_NAME}" ]]; then
-    echo "[token-debug] ${label}: target repository context missing"
-    return 1
-  fi
-
-  local login_output
-  if login_output=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${token}" gh api user --jq '.login' 2>&1); then
-    echo "[token-debug] ${label}: login ${login_output}"
-  else
-    echo "[token-debug] ${label}: failed to fetch login: ${login_output}"
-  fi
-
-  local perm_output
-  if perm_output=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${token}" gh api graphql \
-      -f owner="${TARGET_REPO_OWNER}" \
-      -f name="${TARGET_REPO_NAME}" \
-      -f head="${branch}" \
-      --raw-field query="${PR_DEBUG_GRAPHQL_QUERY}" \
-      --jq '.data' 2>&1); then
-    echo "[token-debug] ${label}: ${perm_output}"
-  else
-    echo "[token-debug] ${label}: graphql query failed: ${perm_output}"
-  fi
-}
-
-####################################
-# Debug helper to describe repo permissions for the stored gh auth
-# (i.e., target_gh_token written to gh).
-####################################
-function describe_repo_permissions_with_default_login() {
-  local label=$1
-  local branch=$2
-
-  if [[ -z "${TARGET_REPO_OWNER}" || -z "${TARGET_REPO_NAME}" ]]; then
-    echo "[token-debug] ${label}: target repository context missing"
-    return 1
-  fi
-
-  local login_output
-  if login_output=$(gh_without_workflow_token_env api user --jq '.login' 2>&1); then
-    echo "[token-debug] ${label}: login ${login_output}"
-  else
-    echo "[token-debug] ${label}: failed to fetch login: ${login_output}"
-  fi
-
-  local perm_output
-  if perm_output=$(gh_without_workflow_token_env api graphql \
-      -f owner="${TARGET_REPO_OWNER}" \
-      -f name="${TARGET_REPO_NAME}" \
-      -f head="${branch}" \
-      --raw-field query="${PR_DEBUG_GRAPHQL_QUERY}" \
-      --jq '.data' 2>&1); then
-    echo "[token-debug] ${label}: ${perm_output}"
-  else
-    echo "[token-debug] ${label}: graphql query failed: ${perm_output}"
-  fi
-}
-
-####################################
-# Aggregate debug output for all interesting tokens.
-# Arguments:
-#   branch name to inspect
-####################################
-function debug_pr_token_matrix() {
-  local branch=$1
-  echo "[token-debug] Inspecting permissions for branch ${branch}"
-  describe_repo_permissions_with_token "GITHUB_TOKEN" "${GITHUB_TOKEN}" "${branch}"
-  describe_repo_permissions_with_token "TARGET_GH_TOKEN" "${TARGET_GH_TOKEN}" "${branch}"
-  describe_repo_permissions_with_default_login "gh-cli-config" "${branch}"
-}
-
-####################################
 # Check if a PR already exists for a given branch.
 # Sets FOUND_PR_NUMBER and FOUND_PR_URL when present.
 ####################################
 function find_existing_pr_for_branch() {
   local branch=$1
+  local pr_token="${SOURCE_GH_TOKEN:-${GITHUB_TOKEN}}"
 
   if [[ -z "${branch}" ]]; then
     warn "branch name is empty when checking for an existing PR"
     return 1
   fi
 
-  if [[ -z "${GITHUB_TOKEN}" ]]; then
-    debug "GITHUB_TOKEN is empty. Skipping PR existence check for ${branch}"
+  if [[ -z "${pr_token}" ]]; then
+    debug "PR token is empty. Skipping PR existence check for ${branch}"
     return 1
   fi
 
   local existing_pr
-  if ! existing_pr=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" gh pr list \
+  if ! existing_pr=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${pr_token}" gh pr list \
     --state open \
     --head "${branch}" \
     --json number,url \
@@ -577,11 +457,6 @@ function create_pr() {
 
   gh_exec_with_github_token "gh pr create" "${args[@]}" || create_pr_has_issues=true
 
-  debug "[gh-default] verifying stored gh login after PR attempt"
-  if ! gh_without_workflow_token_env auth status --hostname "${TARGET_REPO_HOSTNAME}"; then
-    debug "[gh-default] warning: unable to verify gh auth after PR creation"
-  fi
-
   if [ "$create_pr_has_issues" == true ] ; then
     warn "Creating the PR failed."
     warn "Eventually it is already existent."
@@ -611,8 +486,6 @@ function create_or_edit_pr() {
   local labels=$4
   local reviewers=$5
   local pr_branch=${6:-${PR_BRANCH}}
-
-  debug_pr_token_matrix "${pr_branch}"
 
   if find_existing_pr_for_branch "${pr_branch}"; then
     info "pull request already exists for ${pr_branch}: ${FOUND_PR_URL}"
