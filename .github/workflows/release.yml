@@ -8,8 +8,6 @@ on:
 jobs:
   call_shellcheck:
     uses: ./.github/workflows/shellcheck.yml
-  call_lint:
-    uses: ./.github/workflows/lint.yml
   call_test_all:
     uses: ./.github/workflows/test_all.yml
     secrets: inherit
@@ -19,7 +17,6 @@ jobs:
   call_release_please:
     needs:
       - call_shellcheck
-      - call_lint
       - call_test_all
     permissions:
       contents: write

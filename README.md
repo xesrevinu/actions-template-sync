@@ -286,7 +286,7 @@ jobs:
 
 | Variable                    | Description                                                                                                   | Required | Default                                                           |
 |-----------------------------|---------------------------------------------------------------------------------------------------------------|----------|-----------------------------------------------------------------------|
-| github_token                | :warning: [Deprecated] please use `source_gh_token` instead to have a declarative name. Token for the repo. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`                                     | `true`   |   `${{ github.token }}`                                                                    |
+| github_token                | :warning: [Deprecated] please use `source_gh_token` instead to have a declarative name. When provided, this token is reserved for pull-request creation/editing so that GitHub records the activity as `github-actions[bot]`. Can be passed in using `${{ secrets.GITHUB_TOKEN }}` | `true`   |   `${{ github.token }}`                                                                    |
 | source_gh_token | `[optional]` used for the source github repo token. Can be passed in using `${{ secrets.GITHUB_TOKEN }}` | `false` | `${{ github.token }}` |
 | target_gh_token | `[optional]` used for the source github repo token. Can be passed in using `${{ secrets.GITHUB_TOKEN }}` | `false` | `${{ github.token }}` |
 | source_repo_path            | Repository path of the template                                                                               | `true`   |                                                                       |
