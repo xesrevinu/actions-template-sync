@@ -150,12 +150,7 @@ function gh_exec_with_github_token() {
   fi
 
   info "Running ${description} as github-actions[bot]"
-  if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"; then
-    return 0
-  fi
-
-  warn "${description} failed as github-actions[bot]; retrying with stored gh auth"
-  gh_without_workflow_token_env "${command[@]}"
+  GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"
 }
 
 #######################################
@@ -390,6 +385,42 @@ function push () {
 }
 
 ####################################
+# Check if a PR already exists for a given branch.
+# Sets FOUND_PR_NUMBER and FOUND_PR_URL when present.
+####################################
+function find_existing_pr_for_branch() {
+  local branch=$1
+
+  if [[ -z "${branch}" ]]; then
+    warn "branch name is empty when checking for an existing PR"
+    return 1
+  fi
+
+  if [[ -z "${GITHUB_TOKEN}" ]]; then
+    debug "GITHUB_TOKEN is empty. Skipping PR existence check for ${branch}"
+    return 1
+  fi
+
+  local existing_pr
+  if ! existing_pr=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" gh pr list \
+    --state open \
+    --head "${branch}" \
+    --json number,url \
+    --template '{{- if gt (len .) 0 -}}{{- (index . 0).number -}},{{- (index . 0).url -}}{{- end -}}'); then
+    warn "Unable to query existing PRs for branch ${branch}"
+    return 1
+  fi
+
+  if [[ -z "${existing_pr}" ]]; then
+    return 1
+  fi
+
+  FOUND_PR_NUMBER="${existing_pr%%,*}"
+  FOUND_PR_URL="${existing_pr#*,}"
+  return 0
+}
+
+####################################
 # creates a pr
 # Arguments:
 #   title
@@ -431,7 +462,7 @@ function create_pr() {
 }
 
 ####################################
-# creates or edits a pr if already existent
+# creates a pr or reuses an existing one if present.
 # Arguments:
 #   title
 #   body
@@ -448,21 +479,14 @@ function create_or_edit_pr() {
   local reviewers=$5
   local pr_branch=${6:-${PR_BRANCH}}
 
-  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" || {
-    local -a edit_args=(gh pr edit "${pr_branch}"
-      --title "${title}"
-      --body "${body}")
+  if find_existing_pr_for_branch "${pr_branch}"; then
+    info "pull request already exists for ${pr_branch}: ${FOUND_PR_URL}"
+    set_github_action_outputs "${pr_branch}" "${TEMPLATE_GIT_HASH}"
+    return 0
+  fi
 
-    if [[ -n "${labels}" ]]; then
-      edit_args+=(--add-label "${labels}")
-    fi
-
-    if [[ -n "${reviewers}" ]]; then
-      edit_args+=(--add-reviewer "${reviewers}")
-    fi
-
-    gh_exec_with_github_token "gh pr edit" "${edit_args[@]}"
-  }
+  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" && \
+    set_github_action_outputs "${pr_branch}" "${TEMPLATE_GIT_HASH}"
 }
 
 #########################################
