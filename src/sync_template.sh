@@ -143,16 +143,24 @@ function gh_exec_with_github_token() {
   shift
   local -a command=("$@")
 
-  local pr_token="${SOURCE_GH_TOKEN:-${GITHUB_TOKEN}}"
-
-  if [[ -z "${pr_token}" ]]; then
-    debug "${description}: SOURCE_GH_TOKEN is empty. Running with current gh identity."
-    "${command[@]}"
-    return $?
+  if [[ -n "${GITHUB_TOKEN}" ]]; then
+    info "Running ${description} as github-actions[bot]"
+    if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"; then
+      return 0
+    fi
+    warn "${description} failed as github-actions[bot]; retrying with source token if available"
   fi
 
-  info "Running ${description} with source token"
-  GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${pr_token}" "${command[@]}"
+  if [[ -n "${SOURCE_GH_TOKEN}" ]]; then
+    info "Running ${description} with source token"
+    if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${SOURCE_GH_TOKEN}" "${command[@]}"; then
+      return 0
+    fi
+    warn "${description} failed with source token"
+  fi
+
+  info "${description}: falling back to current gh identity"
+  "${command[@]}"
 }
 
 #######################################
@@ -392,25 +400,42 @@ function push () {
 ####################################
 function find_existing_pr_for_branch() {
   local branch=$1
-  local pr_token="${SOURCE_GH_TOKEN:-${GITHUB_TOKEN}}"
 
   if [[ -z "${branch}" ]]; then
     warn "branch name is empty when checking for an existing PR"
     return 1
   fi
 
-  if [[ -z "${pr_token}" ]]; then
-    debug "PR token is empty. Skipping PR existence check for ${branch}"
+  local -a tokens=()
+  if [[ -n "${GITHUB_TOKEN}" ]]; then
+    tokens+=("github-actions[bot]::${GITHUB_TOKEN}")
+  fi
+  if [[ -n "${SOURCE_GH_TOKEN}" && "${SOURCE_GH_TOKEN}" != "${GITHUB_TOKEN}" ]]; then
+    tokens+=("source-token::${SOURCE_GH_TOKEN}")
+  fi
+
+  if [[ ${#tokens[@]} -eq 0 ]]; then
+    debug "No tokens available to check existing PRs for ${branch}"
     return 1
   fi
 
   local existing_pr
-  if ! existing_pr=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${pr_token}" gh pr list \
-    --state open \
-    --head "${branch}" \
-    --json number,url \
-    --template '{{- if gt (len .) 0 -}}{{- (index . 0).number -}},{{- (index . 0).url -}}{{- end -}}'); then
-    warn "Unable to query existing PRs for branch ${branch}"
+  for entry in "${tokens[@]}"; do
+    local label=${entry%%::*}
+    local token=${entry##*::}
+    if existing_pr=$(GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${token}" gh pr list \
+      --state open \
+      --head "${branch}" \
+      --json number,url \
+      --template '{{- if gt (len .) 0 -}}{{- (index . 0).number -}},{{- (index . 0).url -}}{{- end -}}'); then
+      break
+    else
+      debug "Unable to query existing PRs for ${branch} using ${label}"
+      existing_pr=""
+    fi
+  done
+
+  if [[ -z "${existing_pr}" ]]; then
     return 1
   fi
 
@@ -489,12 +514,10 @@ function create_or_edit_pr() {
 
   if find_existing_pr_for_branch "${pr_branch}"; then
     info "pull request already exists for ${pr_branch}: ${FOUND_PR_URL}"
-    set_github_action_outputs "${pr_branch}" "${TEMPLATE_GIT_HASH}"
     return 0
   fi
 
-  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" "${pr_branch}" && \
-    set_github_action_outputs "${pr_branch}" "${TEMPLATE_GIT_HASH}"
+  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" "${pr_branch}"
 }
 
 #########################################
