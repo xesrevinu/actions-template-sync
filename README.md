@@ -1,9 +1,12 @@
 # actions-template-sync
+
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-39-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
- [![actions-template-sync](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/actions_template_sync.yml/badge.svg)](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/actions_template_sync.yml)
+[![actions-template-sync](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/actions_template_sync.yml/badge.svg)](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/actions_template_sync.yml)
 
 [![Lint](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/lint.yml/badge.svg)](https://github.com/AndreasAugustin/actions-template-sync/actions/workflows/lint.yml)
 
@@ -41,10 +44,10 @@ Because of the nice community, several feature requests helped to go on with the
 
 This action is creating a pull request with the latest changes within the target repo whenever it runs with following exceptions
 
-* there is already an open PR created with the latest changes of the source repository.
-  * if there are new changes and a PR is already open, a new PR will be created (option to clean up older PRs)
-* related new changes are ignored within the `.templatesyncignore` file
-* the source repository is fully included within the target repository
+- there is already an open PR created with the latest changes of the source repository.
+  - if there are new changes and a PR is already open, a new PR will be created (option to clean up older PRs)
+- related new changes are ignored within the `.templatesyncignore` file
+- the source repository is fully included within the target repository
 
 ```mermaid
 flowchart LR
@@ -57,13 +60,13 @@ flowchart LR
     any_source --> |"<b>ssh</b>"| github_target
 ```
 
-* Sync other public or private repository (e.g. template repositories) with the current repository
-* Ignore files and folders from syncing using a `.templatesyncignore` file
-* many configuration options
-* different lifecycle hooks are supported. This opens the possibility to inject custom code into the workflow with a yaml definition file.
-* different git provider like GitLab, Gittea,.. as source are supported (with ssh).
+- Sync other public or private repository (e.g. template repositories) with the current repository
+- Ignore files and folders from syncing using a `.templatesyncignore` file
+- many configuration options
+- different lifecycle hooks are supported. This opens the possibility to inject custom code into the workflow with a yaml definition file.
+- different git provider like GitLab, Gittea,.. as source are supported (with ssh).
   See [.github/workflows/test_ssh_gitlab.yml](.github/workflows/test_ssh_gitlab.yml) for an example.
-* It is not necessarily needed that source and target repository have the same base history.
+- It is not necessarily needed that source and target repository have the same base history.
   Because of that reason, it is possible to merge 2 totally different repositories with the help of the action.
 
 ## Usage
@@ -80,7 +83,7 @@ Add this configuration to a GitHub action in the current repository:
 on:
   # cronjob trigger
   schedule:
-  - cron: "0 0 1 * *"
+    - cron: "0 0 1 * *"
   # manual trigger
   workflow_dispatch:
 jobs:
@@ -205,13 +208,13 @@ You need to set the scopes to read the source repo.
 
 ###### Fine grained source repo
 
-* `contents` -> read
-* `metadata` -> read
+- `contents` -> read
+- `metadata` -> read
 
 ###### Classic source repo
 
-* `repo` -> all
-* `read:org`
+- `repo` -> all
+- `read:org`
 
 ![pat-scopes](docs/assets/pat_needed_scopes_source_repo.png)
 
@@ -227,13 +230,13 @@ settings -> actions -> general.
 
 ###### Fine grained target repo
 
-* `contents` -> write
-* `metadata` -> read
-* `pull requests` -> write
+- `contents` -> write
+- `metadata` -> read
+- `pull requests` -> write
 
 If you are automatically adding reviewers you also need
 
-* `organisation:members` read permissions to the PAT token.
+- `organisation:members` read permissions to the PAT token.
 
 ![pat-scopes-fine-grained](docs/assets/pat_fine_grained_needed_scopes.png)
 
@@ -244,9 +247,9 @@ When no files are changed in the `.github/workflows` directory, this works well 
 This token does however not have `workflow` scope and can therefore not make any changes to these files.
 For this purpose a token must be created with the following scope as depicted in the figure below.
 
-* `workflow` -> will also enable `repo`
-* `admin:read`
- ![pat-scopes](docs/assets/pat_needed_scopes_target_repo.png)
+- `workflow` -> will also enable `repo`
+- `admin:read`
+  ![pat-scopes](docs/assets/pat_needed_scopes_target_repo.png)
 
 example workflow definition
 :warning: to the checkout action you need to add the parameter `persist-credentials: false` or you will most likely face an issue (#557 #627)
@@ -257,13 +260,12 @@ name: actions-template-sync
 on:
   # cronjob trigger At 00:00 on day-of-month 1. https://crontab.guru/every-month
   schedule:
-  - cron: "0 0 1 * *"
+    - cron: "0 0 1 * *"
   # manual trigger
   workflow_dispatch:
 
 jobs:
   test-implementation-job:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -273,7 +275,7 @@ jobs:
         with:
           # submodules: true
           token: ${{ secrets.CUSTOM_GITHUB_PAT }}
-          persist-credentials: false  # needed see #557 and #627
+          persist-credentials: false # needed see #557 and #627
 
       - name: Test action step PAT
         uses: AndreasAugustin/actions-template-sync@v2
@@ -284,72 +286,72 @@ jobs:
 
 ### Action Inputs
 
-| Variable                    | Description                                                                                                   | Required | Default                                                           |
-|-----------------------------|---------------------------------------------------------------------------------------------------------------|----------|-----------------------------------------------------------------------|
-| github_token                | :warning: [Deprecated] please use `source_gh_token` instead to have a declarative name. When provided, this token is reserved for pull-request creation/editing so that GitHub records the activity as `github-actions[bot]`. Can be passed in using `${{ secrets.GITHUB_TOKEN }}` | `true`   |   `${{ github.token }}`                                                                    |
-| source_gh_token | `[optional]` used for the source github repo token. Can be passed in using `${{ secrets.GITHUB_TOKEN }}` | `false` | `${{ github.token }}` |
-| target_gh_token | `[optional]` used for the source github repo token. Can be passed in using `${{ secrets.GITHUB_TOKEN }}` | `false` | `${{ github.token }}` |
-| source_repo_path            | Repository path of the template                                                                               | `true`   |                                                                       |
-| upstream_branch             | The target branch                                                                                             | `false`  | The remote's default (usually `main`)                                                |
-| source_repo_ssh_private_key | `[optional]` private ssh key for the source repository. [see](#private-template-repository)                   | `false`  |                                                                       |
-| pr_branch_name_prefix       | `[optional]` the prefix of branches created by this action                                                    | `false`  | `chore/template_sync`                                                 |
-| pr_title                    | `[optional]` the title of PRs opened by this action. Must be already created.                                 | `false`  | `upstream merge template repository`                                  |
-| pr_body                     | `[optional]` the body of PRs opened by this action. | `false` | `Merge ${SOURCE_REPO} ${TEMPLATE_GIT_HASH}` |
-| pr_labels                   | `[optional]` comma separated list. [pull request labels][pr-labels].                                          | `false`  | `sync_template`                                                       |
-| pr_reviewers                | `[optional]` comma separated list of pull request reviewers.                                                  | `false`  |                                                                       |
-| pr_commit_msg               | `[optional]` commit message in the created pull request                                                       | `false`  | `chore(template): merge template changes :up:`                        |
-| hostname                    | `[optional]` the hostname of the repository                                                                   | `false`  | `github.com`                                                          |
-| is_git_lfs | `[optional]` set to `true` if you want to enalbe git lfs | `false` | `false` |
-| is_dry_run                  | `[optional]` set to `true` if you do not want to push the changes and not want to create a PR                 | `false`  |                                                                       |
-| is_allow_hooks              | `[optional]` set to `true` if you want to enable lifecycle hooks. Use this with caution!                      | `false`  | `false`                                                               |
-| hooks | `[optional]` please check the lifecycle hooks section below | `false` | |
-| is_force_push_pr            | `[optional]` set to `true` if you want to force push and pr update. Needs further permissions (see below) | `false`  | `false`                                                               |
-| is_pr_cleanup               | `[optional]` set to `true` if you want to cleanup older PRs targeting the same branch. Use this with caution! | `false`  | `false`                                                               |
-| is_keep_branch_on_pr_cleanup | `[optional]` set to `true` if you want to keep the branch when pr is cleanup. Only makes sense together with `is_pr_cleanup` | `false` | `false` |
-| is_not_source_github        | `[optional]` set to `true` if the source git provider is not GitHub                                           | `false`  | `false`                                                               |
-| is_force_deletion | `[optional]` set to `true` if you want to force delete files which are deleted within the source repository even if they contain changes. You need to also adjust `git_remote_pull_params` (see below for details) | `false` | `false` |
-| git_user_name               | `[optional]` set the committer git user.name                                                                  | `false`  | `${GITHUB_ACTOR}`                                                     |
-| git_user_email              | `[optional]` set the committer git user.email                                                                 | `false`  | `github-action@actions-template-sync.noreply.${SOURCE_REPO_HOSTNAME}` |
-| git_remote_pull_params      | `[optional]` set remote pull parameters                                                                       | `false`  | `--allow-unrelated-histories --squash --strategy=recursive -X theirs` |
-| gpg_private_key | `[optional]` set if you want to sign commits | `false` | |
-| gpg_passphrase | `[optional]` set if your optional gpg private key has a passphrase | `false` | |
-| steps | `[optional] add the steps you want to execute within the action` | `false` | all steps will be executed |
-| template_sync_ignore_file_path | `[optional] set the path to the ignore file.` | false |`.templatesyncignore` |
-| is_with_tags | `[optional]` set to `true` if tags should be synced | `false` | `false` |
+| Variable                       | Description                                                                                                                                                                                                        | Required | Default                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------- |
+| github_token                   | When provided, this token is reserved for pull-request creation/editing so that GitHub records the activity as `github-actions[bot]`. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`                         | `true`   | `${{ github.token }}`                                                 |
+| source_gh_token                | `[optional]` used for the source github repo token. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`                                                                                                           | `false`  | `${{ github.token }}`                                                 |
+| target_gh_token                | `[optional]` used for the source github repo token. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`                                                                                                           | `false`  | `${{ github.token }}`                                                 |
+| source_repo_path               | Repository path of the template                                                                                                                                                                                    | `true`   |                                                                       |
+| upstream_branch                | The target branch                                                                                                                                                                                                  | `false`  | The remote's default (usually `main`)                                 |
+| source_repo_ssh_private_key    | `[optional]` private ssh key for the source repository. [see](#private-template-repository)                                                                                                                        | `false`  |                                                                       |
+| pr_branch_name_prefix          | `[optional]` the prefix of branches created by this action                                                                                                                                                         | `false`  | `chore/template_sync`                                                 |
+| pr_title                       | `[optional]` the title of PRs opened by this action. Must be already created.                                                                                                                                      | `false`  | `upstream merge template repository`                                  |
+| pr_body                        | `[optional]` the body of PRs opened by this action.                                                                                                                                                                | `false`  | `Merge ${SOURCE_REPO} ${TEMPLATE_GIT_HASH}`                           |
+| pr_labels                      | `[optional]` comma separated list. [pull request labels][pr-labels].                                                                                                                                               | `false`  | `sync_template`                                                       |
+| pr_reviewers                   | `[optional]` comma separated list of pull request reviewers.                                                                                                                                                       | `false`  |                                                                       |
+| pr_commit_msg                  | `[optional]` commit message in the created pull request                                                                                                                                                            | `false`  | `chore(template): merge template changes :up:`                        |
+| hostname                       | `[optional]` the hostname of the repository                                                                                                                                                                        | `false`  | `github.com`                                                          |
+| is_git_lfs                     | `[optional]` set to `true` if you want to enalbe git lfs                                                                                                                                                           | `false`  | `false`                                                               |
+| is_dry_run                     | `[optional]` set to `true` if you do not want to push the changes and not want to create a PR                                                                                                                      | `false`  |                                                                       |
+| is_allow_hooks                 | `[optional]` set to `true` if you want to enable lifecycle hooks. Use this with caution!                                                                                                                           | `false`  | `false`                                                               |
+| hooks                          | `[optional]` please check the lifecycle hooks section below                                                                                                                                                        | `false`  |                                                                       |
+| is_force_push_pr               | `[optional]` set to `true` if you want to force push and pr update. Needs further permissions (see below)                                                                                                          | `false`  | `false`                                                               |
+| is_pr_cleanup                  | `[optional]` set to `true` if you want to cleanup older PRs targeting the same branch. Use this with caution!                                                                                                      | `false`  | `false`                                                               |
+| is_keep_branch_on_pr_cleanup   | `[optional]` set to `true` if you want to keep the branch when pr is cleanup. Only makes sense together with `is_pr_cleanup`                                                                                       | `false`  | `false`                                                               |
+| is_not_source_github           | `[optional]` set to `true` if the source git provider is not GitHub                                                                                                                                                | `false`  | `false`                                                               |
+| is_force_deletion              | `[optional]` set to `true` if you want to force delete files which are deleted within the source repository even if they contain changes. You need to also adjust `git_remote_pull_params` (see below for details) | `false`  | `false`                                                               |
+| git_user_name                  | `[optional]` set the committer git user.name                                                                                                                                                                       | `false`  | `${GITHUB_ACTOR}`                                                     |
+| git_user_email                 | `[optional]` set the committer git user.email                                                                                                                                                                      | `false`  | `github-action@actions-template-sync.noreply.${SOURCE_REPO_HOSTNAME}` |
+| git_remote_pull_params         | `[optional]` set remote pull parameters                                                                                                                                                                            | `false`  | `--allow-unrelated-histories --squash --strategy=recursive -X theirs` |
+| gpg_private_key                | `[optional]` set if you want to sign commits                                                                                                                                                                       | `false`  |                                                                       |
+| gpg_passphrase                 | `[optional]` set if your optional gpg private key has a passphrase                                                                                                                                                 | `false`  |                                                                       |
+| steps                          | `[optional] add the steps you want to execute within the action`                                                                                                                                                   | `false`  | all steps will be executed                                            |
+| template_sync_ignore_file_path | `[optional] set the path to the ignore file.`                                                                                                                                                                      | false    | `.templatesyncignore`                                                 |
+| is_with_tags                   | `[optional]` set to `true` if tags should be synced                                                                                                                                                                | `false`  | `false`                                                               |
 
 ### Action Outputs
 
 > Properties that are available after the action executed.
 
-| output | description |
-| ------ | ----------- |
-| pr_branch | The name of the branch used for the pull request |
-| template_git_hash | The template source repository git hash |
+| output            | description                                      |
+| ----------------- | ------------------------------------------------ |
+| pr_branch         | The name of the branch used for the pull request |
+| template_git_hash | The template source repository git hash          |
 
 **Remarks** Please consider following edge cases
 
-* **pr_branch**
-  * If PR branch already exists (e.g. after a 2nd run) the action won't update the branch but will still output the branch name
-  * If the remote repository already contains the source repository changes the action will exit and the output variable will be undefined
-  * If there are no changes the action will exit and the output variable will be undefined
+- **pr_branch**
+  - If PR branch already exists (e.g. after a 2nd run) the action won't update the branch but will still output the branch name
+  - If the remote repository already contains the source repository changes the action will exit and the output variable will be undefined
+  - If there are no changes the action will exit and the output variable will be undefined
 
 ### Change the target branch
 
 Per default the action is using the default branch as the target. To change this behaviour just add it to the checkout action
 
 ```yaml
-  - name: Checkout
-    uses: actions/checkout@v4
-    with:
-      ref: <target_branch>  # defaults to the default branch
+- name: Checkout
+  uses: actions/checkout@v4
+  with:
+    ref: <target_branch> # defaults to the default branch
 ```
 
 ### Docker
 
 There are docker images available. Please checkout [How to use docker](docs/DOCKER.md) for details.
 
-* [dockerhub andyaugustin/actions-template-sync][dockerhub-repo]
-* [github andreasaugustin/actions-template-sync][github-repo]
+- [dockerhub andyaugustin/actions-template-sync][dockerhub-repo]
+- [github andreasaugustin/actions-template-sync][github-repo]
 
 ### Example
 
@@ -358,9 +360,9 @@ See the definition within [self-usage][self-usage].
 
 If you look for a more detailed guide you can have a look at
 
-* [Dev.to][devto-example]
-* [GitHub][github-example]
-* :heart: [nice blog post][dotdc-blog]
+- [Dev.to][devto-example]
+- [GitHub][github-example]
+- :heart: [nice blog post][dotdc-blog]
 
 ### Trigger
 
@@ -395,10 +397,10 @@ If you set the input `is_force_push_pr` to `true` you are able to react to e.g. 
 Please note that you need to add permissions for `repository-projects: read`. Compare the needed scope with [gh pr edit][github-gh-cli-pr-edit]
 
 ```yaml
-  permissions:
-    contents: write
-    pull-requests: write
-    repository-projects: read
+permissions:
+  contents: write
+  pull-requests: write
+  repository-projects: read
 ```
 
 ## Sign commits
@@ -431,7 +433,7 @@ If your key has a password, create another secret named `GPG_PASSPHRASE`.
 on:
   # cronjob trigger
   schedule:
-  - cron: "0 0 1 * *"
+    - cron: "0 0 1 * *"
   # manual trigger
   workflow_dispatch:
 jobs:
@@ -457,31 +459,30 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           # uncomment if your key has a passphrase
           # gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
-
 ```
 
 ## Lifecycle actions
 
 The action has different phases which are executed in the following order
 
-* **preparation** prepare and configure git related things
-  * init git
-  * auth related (ssh or github auth)
-  * [optional] gpg setup
-* **prechecks** run some prechecks
-  * skipped if `is_force_push_pr` parameter is set to `true`
-  * check if the sync branch is already existing in target repository
-  * check if new changes of the source repository are already within history
-* **pull** pull the changes from the remote repository into the action runtime
-* **commit** commit the changes within the action runtime
-* **push**
-  * if `is_force_push_pr` is set to true then a force push will be executed
-* **pr**
-  * eventual create registered labels (:ninja: emojis are supported)
-  * create a new PR
-  * if `is_force_push_pr` is set to true then the PR will be created or edited
-  * [optional] **cleanup** eventual cleanup older PRs of the action
-* set **github action outputs**
+- **preparation** prepare and configure git related things
+  - init git
+  - auth related (ssh or github auth)
+  - [optional] gpg setup
+- **prechecks** run some prechecks
+  - skipped if `is_force_push_pr` parameter is set to `true`
+  - check if the sync branch is already existing in target repository
+  - check if new changes of the source repository are already within history
+- **pull** pull the changes from the remote repository into the action runtime
+- **commit** commit the changes within the action runtime
+- **push**
+  - if `is_force_push_pr` is set to true then a force push will be executed
+- **pr**
+  - eventual create registered labels (:ninja: emojis are supported)
+  - create a new PR
+  - if `is_force_push_pr` is set to true then the PR will be created or edited
+  - [optional] **cleanup** eventual cleanup older PRs of the action
+- set **github action outputs**
 
 If `is_dry_run` parameter is set to true then all stages modifying the github state are not run (e.g. push, cleanup and pr).
 
@@ -498,7 +499,7 @@ e.g.
 on:
   # cronjob trigger
   schedule:
-  - cron: "0 0 1 * *"
+    - cron: "0 0 1 * *"
   # manual trigger
   workflow_dispatch:
 jobs:
@@ -518,7 +519,7 @@ jobs:
         uses: AndreasAugustin/actions-template-sync@v2
         with:
           source_repo_path: <owner/repo>
-          steps: "prechecks,pull"  # order matters
+          steps: "prechecks,pull" # order matters
 
       - name: in between step
         run: |
@@ -529,8 +530,7 @@ jobs:
         uses: AndreasAugustin/actions-template-sync@v2
         with:
           source_repo_path: <owner/repo>
-          steps: "commit,push,pr"  # order matters
-
+          steps: "commit,push,pr" # order matters
 ```
 
 ## Lifecycle hooks
@@ -543,11 +543,11 @@ or you set the hooks input parameter within the action definition with a related
 
 The following hooks are supported (please check [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a better understanding of the lifecycles).
 
-* `prepull` is executed before the code is pulled from the source repository
-* `precommit` is executed before the code is commited
-* `prepush` is executed before the push is executed, right after the commit
-* `precleanup` is executed before older PRs targeting the same branch are closed
-* `prepr` is executed before the PR is done
+- `prepull` is executed before the code is pulled from the source repository
+- `precommit` is executed before the code is commited
+- `prepush` is executed before the push is executed, right after the commit
+- `precleanup` is executed before older PRs targeting the same branch are closed
+- `prepr` is executed before the PR is done
 
 **Remark** If you need to install aditional tools just install them in an additional step upfront the action invokation.
 If using the docker image the underlying OS is defined by an Alpine container.
@@ -558,7 +558,7 @@ If using the docker image the underlying OS is defined by an Alpine container.
 - name: Test action step
   uses: AndreasAugustin/actions-template-sync@v2
   env:
-    MY_VAR: "foo"  # possible to define envrionment variables
+    MY_VAR: "foo" # possible to define envrionment variables
   with:
     source_repo_path: AndreasAugustin/template.git
     upstream_branch: main
@@ -637,13 +637,13 @@ Some notes if you use GitHub Enterprise Server (GHES) and/or custom runners.
 The action script is based on bash. That means your runner must be able to run bash scripts.
 Furthermore you need to have the following command line tools installed:
 
-* ssh
-* [GitHub cli][gh-cli]
-* git
-* optional (dependent the features you are using)
-  * [git lfs][git-lfs] if you are using the lfs functionality
-  * [yq][yq] if you are using the hook functionality
-  * gpg if you are using the git signing functionality
+- ssh
+- [GitHub cli][gh-cli]
+- git
+- optional (dependent the features you are using)
+  - [git lfs][git-lfs] if you are using the lfs functionality
+  - [yq][yq] if you are using the hook functionality
+  - gpg if you are using the git signing functionality
 
 Furthermore most likely you have a custom domain name. Therefore you should configure the `hostname` GitHub action parameter.
 
@@ -652,75 +652,75 @@ Furthermore most likely you have a custom domain name. Therefore you should conf
 :whale: There is also a docker image available which has all needed tools installed. This is helpful e.g. if you are not able to use a remote action.
 The idea is to use the [docker action][action-docker]
 
-* [GitHub registry][github-repo]
-* [Dockerhub registry][dockerhub-repo]
+- [GitHub registry][github-repo]
+- [Dockerhub registry][dockerhub-repo]
 
 ## Troubleshooting
 
-* The error message `refusing to allow a GitHub App to create or update workflow '.github/workflows/<script-name>.yml' without 'workflows' permission)`
-is indicating that the PAT in the `target_gh_token` does not have the correct permissions.
-This happens because the template repository is trying to overwrite some files inside `.github/workflows/`.
+- The error message `refusing to allow a GitHub App to create or update workflow '.github/workflows/<script-name>.yml' without 'workflows' permission)`
+  is indicating that the PAT in the `target_gh_token` does not have the correct permissions.
+  This happens because the template repository is trying to overwrite some files inside `.github/workflows/`.
 
-    Currently `GITHUB_TOKEN` can't be given `workflow` permission.
-    You can grant our workflow with `workflow` permission using a PAT following the steps below:
+      Currently `GITHUB_TOKEN` can't be given `workflow` permission.
+      You can grant our workflow with `workflow` permission using a PAT following the steps below:
 
-    1. [Create a PAT][github-create-pat] with these repository permissions granted: `workflow`.
+      1. [Create a PAT][github-create-pat] with these repository permissions granted: `workflow`.
 
-    2. Copy the generated token and [create a new secret for your target repository][github-create-secret].
+      2. Copy the generated token and [create a new secret for your target repository][github-create-secret].
 
-    3. Configure the `actions-template-sync` step to use the freshly generated token in `target_gh_token` like this:
+      3. Configure the `actions-template-sync` step to use the freshly generated token in `target_gh_token` like this:
 
-    ```yaml
-    # File: .github/workflows/template-sync.yml
+      ```yaml
+      # File: .github/workflows/template-sync.yml
 
-    on:
-      # cronjob trigger
-      schedule:
-      - cron: "0 0 1 * *"
-      # manual trigger
-      workflow_dispatch:
-    jobs:
-      repo-sync:
-        runs-on: ubuntu-latest
-        # https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
-        permissions:
-          contents: write
-          pull-requests: write
+      on:
+        # cronjob trigger
+        schedule:
+        - cron: "0 0 1 * *"
+        # manual trigger
+        workflow_dispatch:
+      jobs:
+        repo-sync:
+          runs-on: ubuntu-latest
+          # https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
+          permissions:
+            contents: write
+            pull-requests: write
 
-        steps:
-          # To use this repository's private action, you must check out the repository
-          - name: Checkout
-            uses: actions/checkout@v4
-            with:
-              # submodules: true
-              persist-credentials: false # needed
+          steps:
+            # To use this repository's private action, you must check out the repository
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                # submodules: true
+                persist-credentials: false # needed
 
-          - name: actions-template-sync
-            uses: AndreasAugustin/actions-template-sync@v2
-            with:
-              source_gh_token: ${{ secrets.GITHUB_TOKEN }}
-              target_gh_token: ${{ secrets.<secret_name> }}
-              source_repo_path: <owner/repo>
-              upstream_branch: <target_branch> # defaults to main
-              pr_labels: <label1>,<label2>[,...] # optional, no default
-    ```
+            - name: actions-template-sync
+              uses: AndreasAugustin/actions-template-sync@v2
+              with:
+                source_gh_token: ${{ secrets.GITHUB_TOKEN }}
+                target_gh_token: ${{ secrets.<secret_name> }}
+                source_repo_path: <owner/repo>
+                upstream_branch: <target_branch> # defaults to main
+                pr_labels: <label1>,<label2>[,...] # optional, no default
+      ```
 
-    :warning: you need to add `persist-credentials: false` to the checkout action
+      :warning: you need to add `persist-credentials: false` to the checkout action
 
-* pull request create failed: GraphQL: GitHub Actions is not permitted to create or approve pull requests (createPullRequest)
+- pull request create failed: GraphQL: GitHub Actions is not permitted to create or approve pull requests (createPullRequest)
 
   Open your project `Settings > Actions > General` and select the checkbox `Allow GitHub Actions to create and approve pull requests`
-under the `Workflow permissions` section.
+  under the `Workflow permissions` section.
 
 ## Release update notes
 
-* `v2`
-  * `git lfs` is no default anymore. Enable with `is_git_lfs` parameter.
-  * infrastructure change: now using [composite action][action-composite] instead of [docker action][action-docker]
+- `v2`
+  - `git lfs` is no default anymore. Enable with `is_git_lfs` parameter.
+  - infrastructure change: now using [composite action][action-composite] instead of [docker action][action-docker]
     to be more flexible to combine more actions (file system permissions).
-  * local `git config` now instead of global `git config --global` in respect to be more flexible in chaining actions.
-* :warning: starting with version `v1` (`v1.0.0`) the `upstream_branch` variable default is not `main` anymore. It is now set to the remote default branch.
-* starting with version v0.5.2-draft the `templateversionrc` file is not needed anymore. You can delete that file from the target repositories.
+  - local `git config` now instead of global `git config --global` in respect to be more flexible in chaining actions.
+- :warning: starting with version `v1` (`v1.0.0`) the `upstream_branch` variable default is not `main` anymore. It is now set to the remote default branch.
+- starting with version v0.5.2-draft the `templateversionrc` file is not needed anymore. You can delete that file from the target repositories.
 
 ## Debug
 
@@ -731,22 +731,22 @@ For more information, see "[Enabling debug logging.][enabling-debug-logging]"
 
 There are other great tools available within GitHub. Here you can find a comparison.
 
-| **feature** | **actions-template-sync** |[github-sync][other-repo-sync]| [git-repo-sync][other-git-repo-sync] | [action-template-repository-sync][other-action-template-repository-sync] |
-| ----------- | ------------------------- | -------------------------- | ------------------------------------ | --------------------------------- |
-| GitHub action | :heavy_check_mark: | :heavy_check_mark: | :x: | :heavy_check_mark: |
-| hooks | :heavy_check_mark: | :x: | :x: | :x: |
-| available docker image | :heavy_check_mark: | :x: | :x: | :heavy_check_mark: |
-| sync between private and public repo | :heavy_check_mark: `PAT,ssh,Github app` | :heavy_check_mark: `PAT,ssh` |:x: local repos | :heavy_check_mark: `PAT` |
-| sync between 2 private repos | :heavy_check_mark: `PAT,ssh,Github app` | :heavy_check_mark: `PAT,ssh` | :x: local repos | :heavy_check_mark: `PAT` |
-| sync between 2 public repos | :heavy_check_mark: | :heavy_check_mark: | :x: local repos | :heavy_check_mark: |
-| two way sync | :x: | :heavy_check_mark: | :x: | :x: |
-| Sync from a third-party repo to a Github repo | :heavy_check_mark: | :heavy_check_mark: | :x: local repos | :x: |
-| dry run | :heavy_check_mark: | :x: | :x: | :heavy_check_mark:  |
-| ignore files | :heavy_check_mark: | :x: | :x: | :heavy_check_mark: |
-| creates a PR | :heavy_check_mark: | :heavy_check_mark: | :x: | :heavy_check_mark: |
-| sign commits | :heavy_check_mark: | :x: | :x: | :x: |
-| docker images available | :heavy_check_mark: | :x: | :x: | :x: |
-| remarks | The action is placed within the target repositories | The action is placed within the target repositories | CLI meant for local use | The action will be based within the base repository with a list of dependent repositories |
+| **feature**                                   | **actions-template-sync**                           | [github-sync][other-repo-sync]                      | [git-repo-sync][other-git-repo-sync] | [action-template-repository-sync][other-action-template-repository-sync]                  |
+| --------------------------------------------- | --------------------------------------------------- | --------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| GitHub action                                 | :heavy_check_mark:                                  | :heavy_check_mark:                                  | :x:                                  | :heavy_check_mark:                                                                        |
+| hooks                                         | :heavy_check_mark:                                  | :x:                                                 | :x:                                  | :x:                                                                                       |
+| available docker image                        | :heavy_check_mark:                                  | :x:                                                 | :x:                                  | :heavy_check_mark:                                                                        |
+| sync between private and public repo          | :heavy_check_mark: `PAT,ssh,Github app`             | :heavy_check_mark: `PAT,ssh`                        | :x: local repos                      | :heavy_check_mark: `PAT`                                                                  |
+| sync between 2 private repos                  | :heavy_check_mark: `PAT,ssh,Github app`             | :heavy_check_mark: `PAT,ssh`                        | :x: local repos                      | :heavy_check_mark: `PAT`                                                                  |
+| sync between 2 public repos                   | :heavy_check_mark:                                  | :heavy_check_mark:                                  | :x: local repos                      | :heavy_check_mark:                                                                        |
+| two way sync                                  | :x:                                                 | :heavy_check_mark:                                  | :x:                                  | :x:                                                                                       |
+| Sync from a third-party repo to a Github repo | :heavy_check_mark:                                  | :heavy_check_mark:                                  | :x: local repos                      | :x:                                                                                       |
+| dry run                                       | :heavy_check_mark:                                  | :x:                                                 | :x:                                  | :heavy_check_mark:                                                                        |
+| ignore files                                  | :heavy_check_mark:                                  | :x:                                                 | :x:                                  | :heavy_check_mark:                                                                        |
+| creates a PR                                  | :heavy_check_mark:                                  | :heavy_check_mark:                                  | :x:                                  | :heavy_check_mark:                                                                        |
+| sign commits                                  | :heavy_check_mark:                                  | :x:                                                 | :x:                                  | :x:                                                                                       |
+| docker images available                       | :heavy_check_mark:                                  | :x:                                                 | :x:                                  | :x:                                                                                       |
+| remarks                                       | The action is placed within the target repositories | The action is placed within the target repositories | CLI meant for local use              | The action will be based within the base repository with a list of dependent repositories |
 
 ## DEV
 

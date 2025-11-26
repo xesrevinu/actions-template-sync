@@ -12,12 +12,12 @@ source "${SCRIPT_DIR}/sync_common.sh"
 # `github_token` input, but avoid losing the original value so that we can use
 # it later (e.g. when creating PRs as github-actions[bot]).
 if [[ -z "${SOURCE_GH_TOKEN}" ]] && [[ -n "${GITHUB_TOKEN}" ]]; then
-  warn "'source_gh_token' is empty. Falling back to deprecated 'github_token'."
+  warn "'source_gh_token' is empty."
   export SOURCE_GH_TOKEN="${GITHUB_TOKEN}"
 fi
 
 if [[ -z "${TARGET_GH_TOKEN}" ]] && [[ -n "${GITHUB_TOKEN}" ]]; then
-  warn "'target_gh_token' is empty. Falling back to deprecated 'github_token'."
+  warn "'target_gh_token' is empty."
   export TARGET_GH_TOKEN="${GITHUB_TOKEN}"
 fi
 
