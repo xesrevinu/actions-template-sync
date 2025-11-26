@@ -93,6 +93,11 @@ fi
 
 info "variables done"
 
+TARGET_REPO_HOSTNAME=$(echo "${GITHUB_SERVER_URL}" | cut -d '/' -f 3)
+if [[ -z "${TARGET_REPO_HOSTNAME}" ]]; then
+  TARGET_REPO_HOSTNAME="${GITHUB_SERVER_URL}"
+fi
+
 #####################################################
 # Functions
 #####################################################
@@ -106,8 +111,12 @@ function gh_login_target_github() {
   echo "::group::login target github"
   local github_server_url=$1
 
+  if [[ -z "${TARGET_REPO_HOSTNAME}" ]]; then
+    TARGET_REPO_HOSTNAME=$(echo "${github_server_url}" | cut -d '/' -f 3)
+  fi
+
   if [[ -n "${TARGET_GH_TOKEN}" ]]; then
-    target_repo_hostname=$(echo "${github_server_url}" | cut -d '/' -f 3)
+    local target_repo_hostname=${TARGET_REPO_HOSTNAME}
     info "target server url: ${target_repo_hostname}"
     info "logging out of the target if logged in"
     gh auth logout --hostname "${target_repo_hostname}" || debug "not logged in"
@@ -119,6 +128,25 @@ function gh_login_target_github() {
   fi
 
   echo "::endgroup::"
+}
+
+#######################################
+# Execute gh command as github-actions[bot] so PRs/commits are attributed to
+# the workflow bot without touching the existing gh login state.
+# Arguments:
+#   description (for logging)
+#   command to execute (variadic)
+#######################################
+function gh_exec_with_github_token() {
+  local description=$1
+  shift
+  if [[ -z "${GITHUB_TOKEN}" ]]; then
+    debug "GITHUB_TOKEN is empty. Running ${description} with the current gh identity."
+    "$@"
+  else
+    info "Running ${description} as github-actions[bot]"
+    GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "$@"
+  fi
 }
 
 #######################################
@@ -369,7 +397,7 @@ function create_pr() {
   local labels=$4
   local reviewers=$5
 
-  gh pr create \
+  gh_exec_with_github_token "gh pr create" gh pr create \
     --title "${title}" \
     --body "${body}" \
     --base "${branch}" \
@@ -402,7 +430,7 @@ function create_or_edit_pr() {
   local reviewers=$5
   local pr_branch=$6
 
-  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" || gh pr edit \
+  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" || gh_exec_with_github_token "gh pr edit" gh pr edit \
     --title "${title}" \
     --body "${body}" \
     --add-label "${labels}" \

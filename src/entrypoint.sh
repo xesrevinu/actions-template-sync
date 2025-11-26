@@ -8,6 +8,19 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 # shellcheck source=src/sync_common.sh
 source "${SCRIPT_DIR}/sync_common.sh"
 
+# Keep backwards compatibility for setups that still rely on the deprecated
+# `github_token` input, but avoid losing the original value so that we can use
+# it later (e.g. when creating PRs as github-actions[bot]).
+if [[ -z "${SOURCE_GH_TOKEN}" ]] && [[ -n "${GITHUB_TOKEN}" ]]; then
+  warn "'source_gh_token' is empty. Falling back to deprecated 'github_token'."
+  export SOURCE_GH_TOKEN="${GITHUB_TOKEN}"
+fi
+
+if [[ -z "${TARGET_GH_TOKEN}" ]] && [[ -n "${GITHUB_TOKEN}" ]]; then
+  warn "'target_gh_token' is empty. Falling back to deprecated 'github_token'."
+  export TARGET_GH_TOKEN="${GITHUB_TOKEN}"
+fi
+
 ###########################################
 # Precheks
 ##########################################
@@ -19,6 +32,11 @@ fi
 
 if [[ -z "${SOURCE_GH_TOKEN}" ]]; then
     err "Missing input 'source_gh_token': \${{ secrets.GITHUB_TOKEN }}'.";
+    exit 1;
+fi
+
+if [[ -z "${GITHUB_TOKEN}" ]]; then
+    err "Missing input 'github_token': \${{ secrets.GITHUB_TOKEN }}'.";
     exit 1;
 fi
 
@@ -182,20 +200,7 @@ function git_init() {
 function gh_login_src_github() {
   echo "::group::login src github"
   local source_repo_hostname=$1
-  # GITHUB_TOKEN is deprecated and can be removed in the future
-  if [[ -n "${SOURCE_GH_TOKEN}" ]] || [[ -n "${GITHUB_TOKEN}" ]] &>/dev/null; then
-    ################################
-    if [[ -n "${GITHUB_TOKEN}" ]] &>/dev/null; then
-      warn "github_token parameter is deprecated please use source_gh_token."
-      info "setting SOURCE_GH_TOKEN"
-      export SOURCE_GH_TOKEN="${GITHUB_TOKEN}"
-      unset GITHUB_TOKEN
-    fi
-    ###############################
-    if [[ -z "${SOURCE_GH_TOKEN}" ]] &>/dev/null; then
-      err "Missing input 'source_gh_token: \${{ secrets.GITHUB_TOKEN }}'.";
-      exit 1;
-    fi
+  if [[ -n "${SOURCE_GH_TOKEN}" ]]; then
     info "source server url: ${source_repo_hostname}"
     info "logging out"
     gh auth logout --hostname "${source_repo_hostname}" || debug "not logged in"
@@ -205,7 +210,7 @@ function gh_login_src_github() {
     gh auth setup-git --hostname "${source_repo_hostname}"
     gh auth status --hostname "${source_repo_hostname}"
   else
-    info "default token to be used"
+    info "source_gh_token is empty. Skipping gh login for the source repo"
     gh auth setup-git --hostname "${source_repo_hostname}"
     gh auth status --hostname "${source_repo_hostname}"
   fi
