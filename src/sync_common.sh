@@ -44,12 +44,15 @@ function info() {
 # Run GitHub CLI commands without inheriting workflow tokens that override
 # stored credentials (e.g. GITHUB_TOKEN/GH_TOKEN).
 # Arguments:
-#   Command to execute (variadic)
+#   Command to execute (variadic). Pass either `auth ...` or `gh ...`
 #######################################
 function gh_without_workflow_token_env() {
   (
     unset GITHUB_TOKEN
     unset GH_TOKEN
+    if [[ "$1" == "gh" ]]; then
+      shift
+    fi
     gh "$@"
   )
 }

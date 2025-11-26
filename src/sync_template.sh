@@ -141,13 +141,21 @@ function gh_login_target_github() {
 function gh_exec_with_github_token() {
   local description=$1
   shift
+  local -a command=("$@")
+
   if [[ -z "${GITHUB_TOKEN}" ]]; then
     debug "GITHUB_TOKEN is empty. Running ${description} with the current gh identity."
-    "$@"
-  else
-    info "Running ${description} as github-actions[bot]"
-    GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "$@"
+    "${command[@]}"
+    return $?
   fi
+
+  info "Running ${description} as github-actions[bot]"
+  if GH_HOST="${TARGET_REPO_HOSTNAME}" GH_TOKEN="${GITHUB_TOKEN}" "${command[@]}"; then
+    return 0
+  fi
+
+  warn "${description} failed as github-actions[bot]; retrying with stored gh auth"
+  gh_without_workflow_token_env "${command[@]}"
 }
 
 #######################################
