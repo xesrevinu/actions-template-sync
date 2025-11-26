@@ -41,6 +41,20 @@ function info() {
 }
 
 #######################################
+# Run GitHub CLI commands without inheriting workflow tokens that override
+# stored credentials (e.g. GITHUB_TOKEN/GH_TOKEN).
+# Arguments:
+#   Command to execute (variadic)
+#######################################
+function gh_without_workflow_token_env() {
+  (
+    unset GITHUB_TOKEN
+    unset GH_TOKEN
+    gh "$@"
+  )
+}
+
+#######################################
 # Executes commands defined within yml file or env variable
 # Arguments:
 #   hook -> the hook to use

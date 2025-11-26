@@ -119,12 +119,13 @@ function gh_login_target_github() {
     local target_repo_hostname=${TARGET_REPO_HOSTNAME}
     info "target server url: ${target_repo_hostname}"
     info "logging out of the target if logged in"
-    gh auth logout --hostname "${target_repo_hostname}" || debug "not logged in"
-    # unset GITHUB_TOKEN
+    if ! gh_without_workflow_token_env auth logout --hostname "${target_repo_hostname}"; then
+      debug "not logged in"
+    fi
     info "login to the target git repository"
-    gh auth login --git-protocol "https" --hostname "${target_repo_hostname}" --with-token <<< "${TARGET_GH_TOKEN}" || warn "login with target token somehow did not work. Please consider using the \'target_github_token\` parameter."
-    gh auth setup-git --hostname "${target_repo_hostname}"
-    gh auth status --hostname "${target_repo_hostname}"
+    gh_without_workflow_token_env auth login --git-protocol "https" --hostname "${target_repo_hostname}" --with-token <<< "${TARGET_GH_TOKEN}" || warn "login with target token somehow did not work. Please consider using the \'target_github_token\` parameter."
+    gh_without_workflow_token_env auth setup-git --hostname "${target_repo_hostname}"
+    gh_without_workflow_token_env auth status --hostname "${target_repo_hostname}"
   fi
 
   echo "::endgroup::"

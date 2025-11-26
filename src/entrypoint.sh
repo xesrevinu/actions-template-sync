@@ -203,16 +203,18 @@ function gh_login_src_github() {
   if [[ -n "${SOURCE_GH_TOKEN}" ]]; then
     info "source server url: ${source_repo_hostname}"
     info "logging out"
-    gh auth logout --hostname "${source_repo_hostname}" || debug "not logged in"
+    if ! gh_without_workflow_token_env auth logout --hostname "${source_repo_hostname}"; then
+      debug "not logged in"
+    fi
     info "login to the source git repository"
-    gh auth login --git-protocol "https" --hostname "${source_repo_hostname}" --with-token <<< "${SOURCE_GH_TOKEN}"
-    gh auth status
-    gh auth setup-git --hostname "${source_repo_hostname}"
-    gh auth status --hostname "${source_repo_hostname}"
+    gh_without_workflow_token_env auth login --git-protocol "https" --hostname "${source_repo_hostname}" --with-token <<< "${SOURCE_GH_TOKEN}"
+    gh_without_workflow_token_env auth status
+    gh_without_workflow_token_env auth setup-git --hostname "${source_repo_hostname}"
+    gh_without_workflow_token_env auth status --hostname "${source_repo_hostname}"
   else
     info "source_gh_token is empty. Skipping gh login for the source repo"
-    gh auth setup-git --hostname "${source_repo_hostname}"
-    gh auth status --hostname "${source_repo_hostname}"
+    gh_without_workflow_token_env auth setup-git --hostname "${source_repo_hostname}"
+    gh_without_workflow_token_env auth status --hostname "${source_repo_hostname}"
   fi
   echo "::endgroup::"
 }
