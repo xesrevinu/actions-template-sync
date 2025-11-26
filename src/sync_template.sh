@@ -437,13 +437,14 @@ function create_or_edit_pr() {
   local upstream_branch=$3
   local labels=$4
   local reviewers=$5
-  local pr_branch=$6
+  local pr_branch=${6:-${PR_BRANCH}}
 
   create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" || gh_exec_with_github_token "gh pr edit" gh pr edit \
     --title "${title}" \
     --body "${body}" \
     --add-label "${labels}" \
-    --add-reviewer "${reviewers}"
+    --add-reviewer "${reviewers}" \
+    "${pr_branch}"
 }
 
 #########################################
@@ -584,11 +585,7 @@ function arr_prepare_pr_create_pr() {
   echo "::group::create PR"
 
   cmd_from_yml "prepr"
-  if [ "$IS_FORCE_PUSH_PR" == true ] ; then
-    create_or_edit_pr "${PR_TITLE}" "${PR_BODY}" "${UPSTREAM_BRANCH}" "${PR_LABELS}" "${PR_REVIEWERS}"
-  else
-    create_pr "${PR_TITLE}" "${PR_BODY}" "${UPSTREAM_BRANCH}" "${PR_LABELS}" "${PR_REVIEWERS}"
-  fi
+  create_or_edit_pr "${PR_TITLE}" "${PR_BODY}" "${UPSTREAM_BRANCH}" "${PR_LABELS}" "${PR_REVIEWERS}" "${PR_BRANCH}"
 
 
   echo "::endgroup::"
