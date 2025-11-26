@@ -405,13 +405,22 @@ function create_pr() {
   local branch=$3
   local labels=$4
   local reviewers=$5
+  local create_pr_has_issues=false
 
-  gh_exec_with_github_token "gh pr create" gh pr create \
-    --title "${title}" \
-    --body "${body}" \
-    --base "${branch}" \
-    --label "${labels}" \
-    --reviewer "${reviewers}" || create_pr_has_issues=true
+  local -a args=(gh pr create
+    --title "${title}"
+    --body "${body}"
+    --base "${branch}")
+
+  if [[ -n "${labels}" ]]; then
+    args+=(--label "${labels}")
+  fi
+
+  if [[ -n "${reviewers}" ]]; then
+    args+=(--reviewer "${reviewers}")
+  fi
+
+  gh_exec_with_github_token "gh pr create" "${args[@]}" || create_pr_has_issues=true
 
   if [ "$create_pr_has_issues" == true ] ; then
     warn "Creating the PR failed."
@@ -439,12 +448,21 @@ function create_or_edit_pr() {
   local reviewers=$5
   local pr_branch=${6:-${PR_BRANCH}}
 
-  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" || gh_exec_with_github_token "gh pr edit" gh pr edit \
-    --title "${title}" \
-    --body "${body}" \
-    --add-label "${labels}" \
-    --add-reviewer "${reviewers}" \
-    "${pr_branch}"
+  create_pr "${title}" "${body}" "${upstream_branch}" "${labels}" "${reviewers}" || {
+    local -a edit_args=(gh pr edit "${pr_branch}"
+      --title "${title}"
+      --body "${body}")
+
+    if [[ -n "${labels}" ]]; then
+      edit_args+=(--add-label "${labels}")
+    fi
+
+    if [[ -n "${reviewers}" ]]; then
+      edit_args+=(--add-reviewer "${reviewers}")
+    fi
+
+    gh_exec_with_github_token "gh pr edit" "${edit_args[@]}"
+  }
 }
 
 #########################################
