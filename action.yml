@@ -14,7 +14,6 @@ inputs:
     required: false
     default: ${{ github.token }}
   github_token:
-    deprecationMessage: "please use source_gh_token instead to have a declarative name"
     description: 'GitHub Token for the repo to be synced from. Can be passed in using $\{{ secrets.GITHUB_TOKEN }}'
     required: false
   source_repo_path:
